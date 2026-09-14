@@ -1,0 +1,98 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.pyre/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+!.env.template
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+secrets.*
+secrets/
+*.secret
+
+# Backend app data
+backend/.env
+backend/.env.*
+backend/storage/
+!backend/storage/.gitkeep
+backend/*.sqlite3
+backend/*.db
+backend/celerybeat-schedule
+backend/*.log
+backend/logs/
+backend/.pytest_cache/
+backend/.coverage
+
+# Frontend / Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+frontend/.cache/
+frontend/.env
+frontend/.env.*
+
+# Package managers
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Databases
+*.sqlite3
+*.db
+*.db-journal
+
+# Build / generated files
+build/
+dist/
+coverage/
+*.egg-info/
+.eggs/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local tooling / temp files
+*.tmp
+*.temp
+.tmp/
+tmp/
+
+# Generated API docs / local artifacts
+openapi.json
+backend/openapi.json
+
+# Keep example env files tracked
+!backend/.env.example
+!frontend/.env.example

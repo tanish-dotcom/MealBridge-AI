@@ -1,0 +1,150 @@
+﻿mealbridge_api  |     value = await result
+mealbridge_api  |             ^^^^^^^^^^^^
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 546, in _prepare_and_execute
+mealbridge_api  |     self._handle_exception(error)
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 497, in _handle_exception
+mealbridge_api  |     self._adapt_connection._handle_exception(error)
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 780, in _handle_exception
+mealbridge_api  |     raise translated_error from error
+mealbridge_api  | sqlalchemy.exc.ProgrammingError: (sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) <class 'asyncpg.exceptions.PostgresSyntaxError'>: syntax error at or near "$2"
+mealbridge_api  | [SQL: SELECT COALESCE(SUM(CASE WHEN d.quantity_unit = 'kg' THEN d.quantity_value / $1 WHEN d.quantity_unit = 'packets' THEN d.quantity_value ELSE d.quantity_value END), 0) AS m FROM donations d WHERE d.status IN $2]
+mealbridge_api  | [parameters: (0.45, ('completed',))]
+mealbridge_api  | (Background on this error at: https://sqlalche.me/e/20/f405)
+mealbridge_api  | 2026-08-08 10:27:52,316 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+mealbridge_api  | 2026-08-08 10:27:52,316 INFO sqlalchemy.engine.Engine SELECT users.id AS users_id, users.email AS users_email, users.phone AS users_phone, users.password_hash AS users_password_hash, users.role AS users_role, users.first_name AS users_first_name, users.last_name AS users_last_name, users.avatar_url AS users_avatar_url, users.preferences AS users_preferences, users.is_active AS users_is_active, users.created_at AS users_created_at, users.updated_at AS users_updated_at 
+mealbridge_api  | FROM users 
+mealbridge_api  | WHERE users.id = $1::UUID
+mealbridge_api  | 2026-08-08 10:27:52,316 INFO sqlalchemy.engine.Engine [cached since 1.954s ago] ('45dfb8de-71ac-46a7-b312-d083d03067f2',)
+mealbridge_api  | 2026-08-08 10:27:52,321 INFO sqlalchemy.engine.Engine SELECT donor_profiles.id, donor_profiles.user_id, donor_profiles.restaurant_name, donor_profiles.owner_name, donor_profiles.donor_type, donor_profiles.address_id, donor_profiles.is_verified, donor_profiles.created_at, donor_profiles.updated_at 
+mealbridge_api  | FROM donor_profiles 
+mealbridge_api  | WHERE donor_profiles.user_id = $1::UUID
+mealbridge_api  | 2026-08-08 10:27:52,322 INFO sqlalchemy.engine.Engine [cached since 0.1092s ago] (UUID('45dfb8de-71ac-46a7-b312-d083d03067f2'),)
+mealbridge_api  | 2026-08-08 10:27:52,326 INFO sqlalchemy.engine.Engine SELECT addresses.id AS addresses_id, addresses.line1 AS addresses_line1, addresses.line2 AS addresses_line2, addresses.city AS addresses_city, addresses.state AS addresses_state, addresses.postal_code AS addresses_postal_code, addresses.country AS addresses_country, addresses.lat AS addresses_lat, addresses.lng AS addresses_lng 
+mealbridge_api  | FROM addresses 
+mealbridge_api  | WHERE addresses.id IN ($1::UUID)
+mealbridge_api  | 2026-08-08 10:27:52,327 INFO sqlalchemy.engine.Engine [cached since 0.1104s ago] (UUID('36550c63-642f-416a-8302-420c9f793736'),)
+mealbridge_api  | 2026-08-08 10:27:52,334 INFO sqlalchemy.engine.Engine SELECT donations.id, donations.donor_id, donations.address_id, donations.food_name, donations.food_category, donations.quantity_value, donations.quantity_unit, donations.preparation_time, donations.best_before, donations.notes, donations.status, donations.pickup_lat, donations.pickup_lng, donations.matched_ngo_id, donations.completed_by_donor, donations.completed_by_ngo, donations.created_at, donations.updated_at 
+mealbridge_api  | FROM donations 
+mealbridge_api  | WHERE donations.donor_id = $1::UUID ORDER BY donations.created_at DESC 
+mealbridge_api  |  LIMIT $2::INTEGER
+mealbridge_api  | 2026-08-08 10:27:52,334 INFO sqlalchemy.engine.Engine [generated in 0.00029s] (UUID('45dfb8de-71ac-46a7-b312-d083d03067f2'), 100)
+mealbridge_api  | 2026-08-08 10:27:52,341 INFO sqlalchemy.engine.Engine ROLLBACK
+mealbridge_api  | INFO:     172.19.0.1:33994 - "GET /api/v1/donations/mine/list HTTP/1.1" 500 Internal Server Error
+mealbridge_api  | ERROR:    Exception in ASGI application
+mealbridge_api  | Traceback (most recent call last):
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/fastapi/encoders.py", line 324, in jsonable_encoder
+mealbridge_api  |     data = dict(obj)
+mealbridge_api  |            ^^^^^^^^^
+mealbridge_api  | TypeError: 'coroutine' object is not iterable
+mealbridge_api  | 
+mealbridge_api  | During handling of the above exception, another exception occurred:
+mealbridge_api  | 
+mealbridge_api  | Traceback (most recent call last):
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/fastapi/encoders.py", line 329, in jsonable_encoder
+mealbridge_api  |     data = vars(obj)
+mealbridge_api  |            ^^^^^^^^^
+mealbridge_api  | TypeError: vars() argument must have __dict__ attribute
+mealbridge_api  | 
+mealbridge_api  | The above exception was the direct cause of the following exception:
+mealbridge_api  | 
+mealbridge_api  | Traceback (most recent call last):
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+mealbridge_api  |     result = await app(  # type: ignore[func-returns-value]
+mealbridge_api  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+mealbridge_api  |     return await self.app(scope, receive, send)
+mealbridge_api  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/fastapi/applications.py", line 1054, in __call__
+mealbridge_api  |     await super().__call__(scope, receive, send)
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/applications.py", line 113, in __call__
+mealbridge_api  |     await self.middleware_stack(scope, receive, send)
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/middleware/errors.py", line 187, in __call__
+mealbridge_api  |     raise exc
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/middleware/errors.py", line 165, in __call__
+mealbridge_api  |     await self.app(scope, receive, _send)
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/middleware/base.py", line 185, in __call__
+mealbridge_api  |     with collapse_excgroups():
+mealbridge_api  |          ^^^^^^^^^^^^^^^^^^^^
+mealbridge_api  |   File "/usr/local/lib/python3.12/contextlib.py", line 158, in __exit__
+mealbridge_api  |     self.gen.throw(value)
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/_utils.py", line 82, in collapse_excgroups
+mealbridge_api  |     raise exc
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+mealbridge_api  |     response = await self.dispatch_func(request, call_next)
+mealbridge_api  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+mealbridge_api  |   File "/app/app/main.py", line 55, in attach_actor
+mealbridge_api  |     return await call_next(request)
+mealbridge_api  |            ^^^^^^^^^^^^^^^^^^^^^^^^
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+mealbridge_api  |     raise app_exc
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+mealbridge_api  |     await self.app(scope, receive_or_disconnect, send_no_error)
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/middleware/cors.py", line 85, in __call__
+mealbridge_api  |     await self.app(scope, receive, send)
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+mealbridge_api  |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+mealbridge_api  |     raise exc
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+mealbridge_api  |     await app(scope, receive, sender)
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/routing.py", line 715, in __call__
+mealbridge_api  |     await self.middleware_stack(scope, receive, send)
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/routing.py", line 735, in app
+mealbridge_api  |     await route.handle(scope, receive, send)
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+mealbridge_api  |     await self.app(scope, receive, send)
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+mealbridge_api  |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+mealbridge_api  |     raise exc
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+mealbridge_api  |     await app(scope, receive, sender)
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+mealbridge_api  |     response = await f(request)
+mealbridge_api  |                ^^^^^^^^^^^^^^^^
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/fastapi/routing.py", line 327, in app
+mealbridge_api  |     content = await serialize_response(
+mealbridge_api  |               ^^^^^^^^^^^^^^^^^^^^^^^^^
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/fastapi/routing.py", line 201, in serialize_response
+mealbridge_api  |     return jsonable_encoder(response_content)
+mealbridge_api  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/fastapi/encoders.py", line 303, in jsonable_encoder
+mealbridge_api  |     jsonable_encoder(
+mealbridge_api  |   File "/usr/local/lib/python3.12/site-packages/fastapi/encoders.py", line 332, in jsonable_encoder
+mealbridge_api  |     raise ValueError(errors) from e
+mealbridge_api  | ValueError: [TypeError("'coroutine' object is not iterable"), TypeError('vars() argument must have __dict__ attribute')]
+mealbridge_api  | 2026-08-08 10:27:52,411 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+mealbridge_api  | 2026-08-08 10:27:52,413 INFO sqlalchemy.engine.Engine SELECT users.id AS users_id, users.email AS users_email, users.phone AS users_phone, users.password_hash AS users_password_hash, users.role AS users_role, users.first_name AS users_first_name, users.last_name AS users_last_name, users.avatar_url AS users_avatar_url, users.preferences AS users_preferences, users.is_active AS users_is_active, users.created_at AS users_created_at, users.updated_at AS users_updated_at 
+mealbridge_api  | FROM users 
+mealbridge_api  | WHERE users.id = $1::UUID
+mealbridge_api  | 2026-08-08 10:27:52,413 INFO sqlalchemy.engine.Engine [cached since 2.051s ago] ('45dfb8de-71ac-46a7-b312-d083d03067f2',)
+mealbridge_api  | 2026-08-08 10:27:52,422 INFO sqlalchemy.engine.Engine SELECT users.id, users.email, users.phone, users.password_hash, users.role, users.first_name, users.last_name, users.avatar_url, users.preferences, users.is_active, users.created_at, users.updated_at 
+mealbridge_api  | FROM users 
+mealbridge_api  | WHERE users.id = $1::UUID
+mealbridge_api  | 2026-08-08 10:27:52,423 INFO sqlalchemy.engine.Engine [generated in 0.00231s] (UUID('45dfb8de-71ac-46a7-b312-d083d03067f2'),)
+mealbridge_api  | 2026-08-08 10:27:52,434 INFO sqlalchemy.engine.Engine SELECT donor_profiles.user_id AS donor_profiles_user_id, donor_profiles.id AS donor_profiles_id, donor_profiles.restaurant_name AS donor_profiles_restaurant_name, donor_profiles.owner_name AS donor_profiles_owner_name, donor_profiles.donor_type AS donor_profiles_donor_type, donor_profiles.address_id AS donor_profiles_address_id, donor_profiles.is_verified AS donor_profiles_is_verified, donor_profiles.created_at AS donor_profiles_created_at, donor_profiles.updated_at AS donor_profiles_updated_at 
+mealbridge_api  | FROM donor_profiles 
+mealbridge_api  | WHERE donor_profiles.user_id IN ($1::UUID)
+mealbridge_api  | 2026-08-08 10:27:52,434 INFO sqlalchemy.engine.Engine [generated in 0.00102s] (UUID('45dfb8de-71ac-46a7-b312-d083d03067f2'),)
+mealbridge_api  | 2026-08-08 10:27:52,443 INFO sqlalchemy.engine.Engine SELECT ngo_profiles.user_id AS ngo_profiles_user_id, ngo_profiles.id AS ngo_profiles_id, ngo_profiles.org_name AS ngo_profiles_org_name, ngo_profiles.registration_number AS ngo_profiles_registration_number, ngo_profiles.contact_person AS ngo_profiles_contact_person, ngo_profiles.verification_status AS ngo_profiles_verification_status, ngo_profiles.verification_doc_url AS ngo_profiles_verification_doc_url, ngo_profiles.capacity_meals_per_day AS ngo_profiles_capacity_meals_per_day, ngo_profiles.food_requirements AS ngo_profiles_food_requirements, ngo_profiles.address_id AS ngo_profiles_address_id, ngo_profiles.reliability_score AS ngo_profiles_reliability_score, ngo_profiles.created_at AS ngo_profiles_created_at, ngo_profiles.updated_at AS ngo_profiles_updated_at 
+mealbridge_api  | FROM ngo_profiles 
+mealbridge_api  | WHERE ngo_profiles.user_id IN ($1::UUID)
+mealbridge_api  | 2026-08-08 10:27:52,443 INFO sqlalchemy.engine.Engine [generated in 0.00074s] (UUID('45dfb8de-71ac-46a7-b312-d083d03067f2'),)
+mealbridge_api  | 2026-08-08 10:27:52,457 INFO sqlalchemy.engine.Engine SELECT addresses.id AS addresses_id, addresses.line1 AS addresses_line1, addresses.line2 AS addresses_line2, addresses.city AS addresses_city, addresses.state AS addresses_state, addresses.postal_code AS addresses_postal_code, addresses.country AS addresses_country, addresses.lat AS addresses_lat, addresses.lng AS addresses_lng 
+mealbridge_api  | FROM addresses 
+mealbridge_api  | WHERE addresses.id IN ($1::UUID)
+mealbridge_api  | 2026-08-08 10:27:52,458 INFO sqlalchemy.engine.Engine [generated in 0.00284s] (UUID('36550c63-642f-416a-8302-420c9f793736'),)
+mealbridge_api  | 2026-08-08 10:27:52,479 INFO sqlalchemy.engine.Engine ROLLBACK
+mealbridge_api  | INFO:     172.19.0.1:34008 - "GET /api/v1/users/me HTTP/1.1" 200 OK
+mealbridge_api  | 2026-08-08 10:27:52,532 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+mealbridge_api  | 2026-08-08 10:27:52,533 INFO sqlalchemy.engine.Engine SELECT users.id AS users_id, users.email AS users_email, users.phone AS users_phone, users.password_hash AS users_password_hash, users.role AS users_role, users.first_name AS users_first_name, users.last_name AS users_last_name, users.avatar_url AS users_avatar_url, users.preferences AS users_preferences, users.is_active AS users_is_active, users.created_at AS users_created_at, users.updated_at AS users_updated_at 
+mealbridge_api  | FROM users 
+mealbridge_api  | WHERE users.id = $1::UUID
+mealbridge_api  | 2026-08-08 10:27:52,533 INFO sqlalchemy.engine.Engine [cached since 2.171s ago] ('45dfb8de-71ac-46a7-b312-d083d03067f2',)
+mealbridge_api  | 2026-08-08 10:27:52,536 INFO sqlalchemy.engine.Engine SELECT notifications.id, notifications.user_id, notifications.type, notifications.title, notifications.body, notifications.payload, notifications.read_at, notifications.created_at, notifications.updated_at 
+mealbridge_api  | FROM notifications 
+mealbridge_api  | WHERE notifications.user_id = $1::UUID ORDER BY notifications.created_at DESC 
+mealbridge_api  |  LIMIT $2::INTEGER
+mealbridge_api  | 2026-08-08 10:27:52,536 INFO sqlalchemy.engine.Engine [generated in 0.00020s] (UUID('45dfb8de-71ac-46a7-b312-d083d03067f2'), 50)
+mealbridge_api  | 2026-08-08 10:27:52,540 INFO sqlalchemy.engine.Engine ROLLBACK
+mealbridge_api  | INFO:     172.19.0.1:34008 - "GET /api/v1/notifications HTTP/1.1" 200 OK
