@@ -3,9 +3,11 @@ import type { ReactNode } from "react";
 import { useAuth } from "./auth/AuthContext";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { PageSpinner } from "./components/Spinner";
 import type { Role } from "./lib/types";
 import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
+import { LandingPage } from "./pages/LandingPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { CreateDonationPage } from "./pages/CreateDonationPage";
 import { DonationsPage } from "./pages/DonationsPage";
@@ -30,10 +32,11 @@ function RequireRole({ roles, children }: { roles: Role[]; children: ReactNode }
   return <>{children}</>;
 }
 
-function HomeRedirect() {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  return <DashboardPage />;
+function HomeRoute() {
+  const { user, loading } = useAuth();
+  if (loading) return <PageSpinner />;
+  if (!user) return <LandingPage />;
+  return <Layout />;
 }
 
 export function App() {
@@ -42,6 +45,10 @@ export function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
 
+      <Route path="/" element={<HomeRoute />}>
+        <Route index element={<DashboardPage />} />
+      </Route>
+
       <Route
         element={
           <ProtectedRoute>
@@ -49,8 +56,6 @@ export function App() {
           </ProtectedRoute>
         }
       >
-        <Route path="/" element={<HomeRedirect />} />
-
         <Route
           path="/donations/new"
           element={
