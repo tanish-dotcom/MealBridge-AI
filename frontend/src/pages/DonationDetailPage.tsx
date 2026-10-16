@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api, ApiError } from "../lib/api";
+import { api } from "../lib/api";
+import { fetchTopNgoRecommendations } from "../api/ml";
 import { useToast } from "../auth/ToastContext";
-import type { Directions, Donation, MatchResult } from "../lib/types";
+import type {
+  Directions,
+  Donation,
+  MatchCandidate,
+  MatchResult,
+  MlRecommendation,
+} from "../lib/types";
 import { categoryLabel, formatDateTime, quantityLabel } from "../lib/format";
 import { StatusBadge } from "../components/StatusBadge";
 import { EmptyState } from "../components/EmptyState";
@@ -11,12 +18,27 @@ import { PageSpinner, ButtonSpinner } from "../components/Spinner";
 const CANCELABLE = new Set(["pending_match", "awaiting_response", "unmatched"]);
 const PICKABLE = new Set(["matched", "picked_up"]);
 
+interface RecommendedNgo {
+  ngo_id: string;
+  ngo_name: string;
+  contact_person?: string | null;
+  score: number;
+  distance_km: number;
+  eta?: number;
+  reasons: string[];
+  acceptance_rate?: number;
+  demand?: number;
+  ml: boolean;
+  offerStatus?: "offered" | "accepted";
+}
+
 export function DonationDetailPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const { error: showError, success } = useToast();
   const [donation, setDonation] = useState<Donation | null>(null);
   const [matches, setMatches] = useState<MatchResult | null>(null);
+  const [mlSuggestions, setMlSuggestions] = useState<MlRecommendation[] | null>(null);
   const [directions, setDirections] = useState<Directions | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -27,12 +49,15 @@ export function DonationDetailPage() {
       const d = await api.getDonation(id);
       setDonation(d);
       if (CANCELABLE.has(d.status)) {
-        try {
-          setMatches(await api.donationMatches(id));
-        } catch (err) {
-          if (err instanceof ApiError && err.status === 404) setMatches(null);
-          else setMatches(null);
-        }
+        const [matchesResult, mlResult] = await Promise.allSettled([
+          api.donationMatches(id),
+          fetchTopNgoRecommendations(id),
+        ]);
+        setMatches(matchesResult.status === "fulfilled" ? matchesResult.value : null);
+        setMlSuggestions(mlResult.status === "fulfilled" ? mlResult.value : null);
+      } else {
+        setMatches(null);
+        setMlSuggestions(null);
       }
       if (PICKABLE.has(d.status)) {
         try {
@@ -82,6 +107,56 @@ export function DonationDetailPage() {
   if (loading || !donation) return <PageSpinner />;
 
   const completed = donation.completed_by_donor;
+
+  // Merge the ML top-5 suggestions with the heuristic offer list into a single
+  // ranked list keyed by NGO, so the donor sees one list instead of two.
+  const offerByNgo = new Map<string, MatchCandidate>();
+  if (matches) {
+    for (const candidate of [matches.top_match, ...matches.alternatives]) {
+      offerByNgo.set(candidate.ngo_id, candidate);
+    }
+  }
+  const acceptedNgoId = donation.matched_ngo_id ?? null;
+
+  const recommended: RecommendedNgo[] = [];
+  const seenNgos = new Set<string>();
+
+  for (const rec of mlSuggestions ?? []) {
+    const offer = offerByNgo.get(rec.ngo_id);
+    recommended.push({
+      ngo_id: rec.ngo_id,
+      ngo_name: rec.ngo_name,
+      contact_person: offer?.contact_person ?? null,
+      score: rec.match_score,
+      distance_km: rec.distance_km,
+      eta: rec.estimated_pickup_minutes,
+      reasons: rec.reasons.length > 0 ? rec.reasons : offer?.quality_tags ?? [],
+      acceptance_rate: rec.acceptance_rate,
+      demand: rec.ngo_demand,
+      ml: true,
+      offerStatus: offer ? (rec.ngo_id === acceptedNgoId ? "accepted" : "offered") : undefined,
+    });
+    seenNgos.add(rec.ngo_id);
+  }
+
+  for (const candidate of offerByNgo.values()) {
+    if (seenNgos.has(candidate.ngo_id)) continue;
+    recommended.push({
+      ngo_id: candidate.ngo_id,
+      ngo_name: candidate.ngo_name,
+      contact_person: candidate.contact_person,
+      score: candidate.match_percent,
+      distance_km: candidate.distance_km,
+      eta: candidate.estimated_pickup_minutes,
+      reasons: candidate.quality_tags,
+      ml: false,
+      offerStatus: candidate.ngo_id === acceptedNgoId ? "accepted" : "offered",
+    });
+    seenNgos.add(candidate.ngo_id);
+  }
+
+  const hasOffers = recommended.some((r) => r.offerStatus !== undefined);
+  const hasMl = recommended.some((r) => r.ml);
 
   return (
     <div className="page">
@@ -144,56 +219,58 @@ export function DonationDetailPage() {
 
         <div className="card">
           <div className="card-header">
-            <h3>Matching NGOs</h3>
+            <h3>Recommended NGOs</h3>
+            {hasMl && <span className="muted small">AI ranked by predicted acceptance</span>}
           </div>
+
           {CANCELABLE.has(donation.status) ? (
-            matches ? (
+            recommended.length > 0 ? (
               <>
-                <div className="top-match">
-                  <div className="top-match-rank">TOP MATCH</div>
-                  <div className="top-match-body">
-                    <h4>{matches.top_match.ngo_name}</h4>
-                    <div className="muted">{matches.top_match.contact_person ?? "—"}</div>
-                    <div className="match-meta">
-                      <span>{matches.top_match.match_percent}% match</span>
-                      <span>{matches.top_match.distance_km} km away</span>
-                      <span>~{matches.top_match.estimated_pickup_minutes} min pickup</span>
-                    </div>
-                    <div className="tag-row">
-                      {matches.top_match.quality_tags.map((t) => (
-                        <span key={t} className="tag">
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                {matches.alternatives.length > 0 && (
-                  <>
-                    <h4 className="alt-title">Alternatives</h4>
-                    <ul className="alt-list">
-                      {matches.alternatives.map((c) => (
-                        <li key={c.ngo_id}>
-                          <div>
-                            <strong>{c.ngo_name}</strong>
-                            <div className="muted small">
-                              {c.distance_km} km · ~{c.estimated_pickup_minutes} min · {c.match_percent}% match
-                            </div>
-                          </div>
-                          <div className="tag-row">
-                            {c.quality_tags.slice(0, 2).map((t) => (
-                              <span key={t} className="tag">
-                                {t}
+                <ul className="alt-list">
+                  {recommended.map((rec, index) => (
+                    <li key={rec.ngo_id}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="chip-row">
+                          <strong>
+                            {index + 1}. {rec.ngo_name}
+                          </strong>
+                          <span className="match-pct">{rec.score}% match</span>
+                          {rec.offerStatus === "accepted" && (
+                            <span className="badge badge-green">Accepted</span>
+                          )}
+                          {rec.offerStatus === "offered" && (
+                            <span className="badge badge-blue">Offer sent</span>
+                          )}
+                        </div>
+                        <div className="muted small">
+                          {rec.distance_km} km away
+                          {rec.eta !== undefined ? ` · ~${rec.eta} min pickup` : ""}
+                          {rec.acceptance_rate !== undefined
+                            ? ` · ${Math.round(rec.acceptance_rate * 100)}% acceptance`
+                            : ""}
+                          {rec.demand !== undefined ? ` · demand ${Math.round(rec.demand)} meals` : ""}
+                        </div>
+                        <div className="h-bar-track" style={{ marginTop: 6 }}>
+                          <div className="h-bar-fill" style={{ width: `${rec.score}%` }} />
+                        </div>
+                        {rec.reasons.length > 0 && (
+                          <div className="tag-row" style={{ marginTop: 6 }}>
+                            {rec.reasons.map((reason) => (
+                              <span key={reason} className="tag">
+                                {reason}
                               </span>
                             ))}
                           </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
                 <p className="muted small" style={{ marginTop: 12 }}>
-                  Awaiting NGO responses. The first verified NGO to accept takes this donation.
+                  {hasOffers
+                    ? "Offers sent to the listed NGOs — the first verified NGO to accept takes this donation."
+                    : "Ranked list of nearby verified NGOs for this donation."}
+                  {hasMl ? " Match % is the model's predicted chance each NGO accepts." : ""}
                 </p>
               </>
             ) : (

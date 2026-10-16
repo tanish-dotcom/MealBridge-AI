@@ -33,6 +33,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+from app.api import ml
+
+app.include_router(
+    ml.router,
+    prefix="/api/ml",
+    tags=["Machine Learning"],
+)
+
 app.state.limiter = limiter
 
 app.add_middleware(

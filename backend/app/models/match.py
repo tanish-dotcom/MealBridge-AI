@@ -4,10 +4,10 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, uuid_pk
+from app.models.base import Base, TimestampMixin, UTCDateTime, uuid_pk
 
 
 class MatchRequest(Base, TimestampMixin):
@@ -27,8 +27,8 @@ class MatchRequest(Base, TimestampMixin):
     match_percent: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     distance_km: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="offered", index=True)
-    offered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    responded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    offered_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    responded_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
 
     donation: Mapped["Donation"] = relationship(back_populates="match_requests")
     ngo: Mapped["NGOProfile"] = relationship()

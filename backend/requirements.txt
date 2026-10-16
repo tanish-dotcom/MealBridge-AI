@@ -19,3 +19,7 @@ slowapi==0.1.9
 orjson==3.10.12
 geoalchemy2==0.16.0
 pillow==11.1.0
+# ---- ML (NGO recommendation model) ----
+scikit-learn==1.6.1
+pandas==3.0.6
+joblib==1.6.0

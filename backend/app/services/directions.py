@@ -13,6 +13,53 @@ logger = logging.getLogger(__name__)
 
 MIN_INTERPOLATE_STEPS = 3
 
+# Public OSRM instances cap the number of coordinates per table request.
+OSRM_TABLE_MAX_COORDS = 99
+
+
+def _osrm_base_url() -> str:
+    """OSRM root URL (without the `/route/v1` suffix) so we can build `/table/v1`."""
+    base = settings.osrm_url.rstrip("/")
+    suffix = "/route/v1"
+    if base.endswith(suffix):
+        return base[: -len(suffix)]
+    return base
+
+
+async def driving_distances(
+    origin: tuple[float, float],
+    destinations: list[tuple[float, float]],
+) -> list[float | None]:
+    """Road distances in km from `origin` to each destination in one OSRM table
+    request. Returns `None` for any pair OSRM cannot resolve (or when a non-OSRM
+    provider is configured) so the caller can fall back to straight-line."""
+    if not destinations:
+        return []
+    if settings.directions_provider != "osrm":
+        return [None] * len(destinations)
+
+    capped = destinations[:OSRM_TABLE_MAX_COORDS]
+    coords = ";".join(
+        [f"{origin[1]},{origin[0]}"] + [f"{lng},{lat}" for lat, lng in capped]
+    )
+    url = f"{_osrm_base_url()}/table/v1/driving/{coords}?sources=0&annotations=distance"
+
+    distances: list[float | None] = [None] * len(destinations)
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+        if data.get("code") != "Ok" or not data.get("distances"):
+            return distances
+        row = data["distances"][0]
+        for i, meters in enumerate(row[1 : len(capped) + 1]):
+            if meters is not None:
+                distances[i] = round(meters / 1000.0, 3)
+    except Exception as exc:  # noqa: BLE001 - fall back to straight-line
+        logger.warning("OSRM table request failed (%s); using straight-line distances", exc)
+    return distances
+
 
 async def _osrm_route(orig: tuple[float, float], dest: tuple[float, float]) -> DirectionsOut | None:
     if settings.directions_provider != "osrm":

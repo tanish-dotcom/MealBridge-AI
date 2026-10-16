@@ -11,6 +11,8 @@ import type {
   DonationCreatePayload,
   DonationStats,
   DonorSignupPayload,
+  GeoReverseResult,
+  GeoSuggestion,
   ImpactReport,
   MatchResult,
   NgoSignupPayload,
@@ -190,6 +192,15 @@ export const api = {
   confirmPickup: (id: string) =>
     post<{ message: string; status: string; side: string }>(`/donations/${id}/confirm-pickup`),
 
+  // ---- Geo (map picker) ----
+  geoSearch: (q: string, limit = 5) =>
+    get(`/geo/search?q=${encodeURIComponent(q)}&limit=${limit}`) as Promise<{
+      query: string;
+      results: GeoSuggestion[];
+    }>,
+  geoReverse: (lat: number, lng: number) =>
+    get(`/geo/reverse?lat=${lat}&lng=${lng}`) as Promise<GeoReverseResult>,
+
   // ---- NGO ----
   ngoStats: () => get("/ngo/dashboard/stats") as Promise<NgoStats>,
   ngoAvailable: () => get("/ngo/available-donations") as Promise<AvailableDonation[]>,
@@ -209,6 +220,10 @@ export const api = {
     post<{ message: string }>(`/admin/verifications/${id}/approve`),
   rejectNgo: (id: string) =>
     post<{ message: string }>(`/admin/verifications/${id}/reject`),
+  verifyRestaurant: (id: string) =>
+    post<{ message: string }>(`/admin/restaurants/${id}/verify`),
+  unverifyRestaurant: (id: string) =>
+    post<{ message: string }>(`/admin/restaurants/${id}/unverify`),
   adminRestaurants: () => get("/admin/restaurants") as Promise<AdminRestaurant[]>,
   adminNgos: () => get("/admin/ngos") as Promise<AdminNgo[]>,
   adminDonations: () => get("/admin/donations") as Promise<AdminDonation[]>,

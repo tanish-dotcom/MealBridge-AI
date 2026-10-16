@@ -20,6 +20,10 @@ class DonationCreate(BaseModel):
     notes: str | None = Field(default=None, max_length=2000)
     address: str = Field(min_length=5, max_length=500)
     city: str = Field(min_length=1, max_length=120)
+    # Exact pickup coordinates from the map picker. When present they are trusted
+    # and the free-text address is not geocoded.
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
 
     @field_validator("best_before")
     @classmethod

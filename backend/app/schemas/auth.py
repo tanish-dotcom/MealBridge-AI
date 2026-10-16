@@ -16,6 +16,8 @@ class DonorSignupRequest(BaseModel):
     phone: str = Field(min_length=7, max_length=32)
     address: str = Field(min_length=5, max_length=500)
     city: str = Field(min_length=1, max_length=120)
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
     password: str = Field(min_length=8, max_length=128)
 
     @field_validator("password")
@@ -36,6 +38,8 @@ class NgoSignupRequest(BaseModel):
     city: str = Field(min_length=1, max_length=120)
     food_requirements: list[str] = Field(default_factory=list)
     capacity_meals_per_day: int | None = Field(default=None, ge=1, le=1000000)
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
     password: str = Field(min_length=8, max_length=128)
 
     @field_validator("password")

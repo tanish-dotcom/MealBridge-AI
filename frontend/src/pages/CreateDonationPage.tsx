@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useToast } from "../auth/ToastContext";
 import { ButtonSpinner } from "../components/Spinner";
+import { LocationPicker, type PickedLocation } from "../components/LocationPicker";
 
 const CATEGORIES = [
   "hot_meals",
@@ -20,6 +21,10 @@ export function CreateDonationPage() {
   const navigate = useNavigate();
   const { error: showError, success } = useToast();
   const [submitting, setSubmitting] = useState(false);
+  const [coords, setCoords] = useState<{ lat: number | null; lng: number | null }>({
+    lat: null,
+    lng: null,
+  });
   const [form, setForm] = useState({
     food_name: "",
     food_category: "hot_meals",
@@ -33,6 +38,15 @@ export function CreateDonationPage() {
 
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const handlePick = (location: PickedLocation) => {
+    setCoords({ lat: location.lat, lng: location.lng });
+    setForm((f) => ({
+      ...f,
+      address: location.address?.trim() || f.address,
+      city: location.city?.trim() || f.city,
+    }));
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -51,6 +65,8 @@ export function CreateDonationPage() {
         notes: form.notes.trim() || null,
         address: form.address.trim(),
         city: form.city.trim(),
+        lat: coords.lat,
+        lng: coords.lng,
         best_before: form.best_before ? new Date(form.best_before).toISOString() : null,
       });
       success("Donation posted! Matching with NGOs now…");
@@ -110,9 +126,19 @@ export function CreateDonationPage() {
                 </select>
               </label>
             </div>
+            <div className="field field-full">
+              <span>Pickup location</span>
+              <LocationPicker lat={coords.lat} lng={coords.lng} onPick={handlePick} />
+            </div>
             <label className="field field-full">
               <span>Pickup address</span>
-              <input value={form.address} onChange={set("address")} required minLength={5} placeholder="Street, area" />
+              <input
+                value={form.address}
+                onChange={set("address")}
+                required
+                minLength={5}
+                placeholder="Auto-filled from the map — edit if needed"
+              />
             </label>
             <label className="field">
               <span>City</span>

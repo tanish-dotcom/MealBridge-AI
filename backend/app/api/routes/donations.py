@@ -31,12 +31,20 @@ async def _serialize_donation(db: AsyncSession, donation: Donation, actor_user: 
             select(User).where(User.id == donation.donor_id).options(selectinload(User.donor_profile))
         )
     ).scalar_one_or_none()
-    if donation.address_id:
-        donation.address = await db.get(Address, donation.address_id)
+    address = await db.get(Address, donation.address_id) if donation.address_id else None
+    donation.address = address
     photos = (
         await db.execute(select(DonationPhoto).where(DonationPhoto.donation_id == donation.id))
     ).scalars().all()
-    data = DonationOut.model_validate(donation).model_dump(mode="json")
+    # Validate against the already-loaded values (accessing the `photos`/`address`
+    # relationships here would trigger a lazy load outside the async context).
+    data = DonationOut.model_validate(
+        {
+            **{column.name: getattr(donation, column.name) for column in Donation.__table__.columns},
+            "address": address,
+            "photos": photos,
+        }
+    ).model_dump(mode="json")
     data["donor_name"] = donor.display_name() if donor else None
     data["donor_email"] = donor.email if donor else None
     data["donor_type"] = donor.donor_profile.donor_type if donor and donor.donor_profile else None
@@ -45,17 +53,27 @@ async def _serialize_donation(db: AsyncSession, donation: Donation, actor_user: 
     return data
 
 
-async def _geocode_pickup(db: AsyncSession, address_text: str, city: str) -> tuple[float, float, uuid.UUID | None]:
+async def _geocode_pickup(
+    db: AsyncSession,
+    address_text: str,
+    city: str,
+    lat: float | None = None,
+    lng: float | None = None,
+) -> tuple[float | None, float | None, uuid.UUID | None]:
     from app.models import Address
 
     address = Address(line1=address_text, city=city, country="India")
     db.add(address)
     await db.flush()
-    try:
-        geo = await geocoding.geocode(f"{address_text}, {city}, India")
-        address.lat, address.lng = geo.lat, geo.lng
-    except GeocodingError:
-        address.lat, address.lng = None, None
+    # Trust exact coordinates from the map picker; only geocode free-text input.
+    if lat is not None and lng is not None:
+        address.lat, address.lng = lat, lng
+    else:
+        try:
+            geo = await geocoding.geocode(f"{address_text}, {city}, India")
+            address.lat, address.lng = geo.lat, geo.lng
+        except GeocodingError:
+            address.lat, address.lng = None, None
     await db.flush()
     if address.lat is not None and address.lng is not None:
         await geocoding.sync_geography(db, str(address.id), address.lat, address.lng)
@@ -69,7 +87,12 @@ async def create_donation(
     donor_profile=Depends(get_donor_profile),
     db: AsyncSession = Depends(get_db),
 ):
-    lat, lng, address_id = await _geocode_pickup(db, payload.address, payload.city)
+    if not donor_profile.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your restaurant must be verified by an admin before you can donate food",
+        )
+    lat, lng, address_id = await _geocode_pickup(db, payload.address, payload.city, payload.lat, payload.lng)
     donation = Donation(
         donor_id=donor_profile.user_id,
         address_id=address_id,

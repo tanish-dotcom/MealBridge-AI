@@ -71,6 +71,7 @@ a {
 .app-shell {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .sidebar {
@@ -333,6 +334,7 @@ a {
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
+  min-width: 0;
 }
 
 /* ---------- Page / headers ---------- */
@@ -448,6 +450,8 @@ a {
 /* ---------- Tables ---------- */
 .table-wrap {
   overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .table {
@@ -1404,6 +1408,7 @@ tr.clickable:hover td {
 @media (max-width: 900px) {
   .sidebar {
     width: 60px;
+    min-width: 60px;
   }
   .sidebar-brand .brand-name,
   .sidebar-brand .brand-sub,
@@ -1423,10 +1428,253 @@ tr.clickable:hover td {
 }
 
 @media (max-width: 640px) {
-  .content {
-    padding: 16px;
+  .app-shell {
+    flex-direction: column;
   }
-  .stat-grid {
-    grid-template-columns: 1fr 1fr;
+
+  .sidebar {
+    position: relative;
+    top: auto;
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    flex: 0 0 auto;
+  }
+
+  .sidebar-brand {
+    padding: 10px 14px;
+  }
+
+  .sidebar-brand .brand-name,
+  .sidebar-brand .brand-sub {
+    display: block;
+  }
+
+  .sidebar-nav {
+    flex: 0 0 auto;
+    flex-direction: row;
+    gap: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px 10px;
+    scrollbar-width: thin;
+  }
+
+  .nav-item {
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    min-height: 40px;
+    padding: 8px 10px;
+    white-space: nowrap;
+  }
+
+  .nav-label {
+    display: inline;
+  }
+
+  .sidebar-footer {
+    display: none;
+  }
+
+  .main-area {
+    width: 100%;
+  }
+
+  .topbar {
+    height: 56px;
+    padding: 0 14px;
+  }
+
+  .content {
+    padding: 16px 12px 24px;
+  }
+
+  .page {
+    gap: 14px;
+  }
+
+  .page-header {
+    gap: 10px;
+  }
+
+  .page-header h2 {
+    font-size: 20px;
+  }
+
+  .page-header > * {
+    min-width: 0;
+  }
+
+  .stat-grid,
+  .donation-grid,
+  .verif-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .donation-grid,
+  .verif-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .detail-grid {
+    gap: 12px;
+  }
+
+  .detail-list {
+    grid-template-columns: minmax(76px, 110px) minmax(0, 1fr);
+    overflow-wrap: anywhere;
+  }
+
+  .card {
+    padding: 14px;
+  }
+
+  .card-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .field-row {
+    flex-direction: column;
+  }
+
+  .form-actions,
+  .donation-actions {
+    flex-wrap: wrap;
+  }
+
+  .h-bar {
+    grid-template-columns: minmax(64px, 100px) minmax(0, 1fr) 38px;
+    gap: 8px;
+  }
+
+  .toast-container {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+  }
+
+  .toast {
+    min-width: 0;
+    max-width: none;
+  }
+
+  .modal-overlay {
+    padding: 12px;
+  }
+
+  .modal-header,
+  .modal-body {
+    padding: 14px;
   }
 }
+
+@media (max-width: 400px) {
+  .content {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .topbar {
+    padding: 0 10px;
+  }
+
+  .stat-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .table th,
+  .table td {
+    padding: 9px 10px;
+  }
+
+  .auth-page {
+    padding: 12px;
+  }
+
+  .auth-card {
+    padding: 24px 18px;
+  }
+}
+
+/* ---------- Location picker (Leaflet map) ---------- */
+.map-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.map-search {
+  position: relative;
+}
+
+.map-search input {
+  width: 100%;
+  font: inherit;
+  font-weight: 400;
+  color: var(--ink-900);
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.map-search input:focus {
+  border-color: var(--green-600);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+}
+
+.map-search .btn {
+  margin-top: 6px;
+}
+
+.map-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1200;
+  margin: 4px 0 0;
+  padding: 4px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.map-suggestions li button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 400;
+  color: var(--ink-600);
+  cursor: pointer;
+}
+
+.map-suggestions li button:hover {
+  background: var(--bg);
+}
+
+.map-canvas {
+  height: 280px;
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  z-index: 0;
+}
+
+.map-hint {
+  min-height: 16px;
+}
+

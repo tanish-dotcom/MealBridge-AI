@@ -61,13 +61,22 @@ async def _issue_tokens(db: AsyncSession, user: User, request: Request) -> Token
     return TokenPair(access_token=access, refresh_token=refresh, expires_in=settings.access_token_expire_minutes * 60)
 
 
-async def _create_address(db: AsyncSession, address_text: str, city: str) -> Address:
+async def _create_address(
+    db: AsyncSession,
+    address_text: str,
+    city: str,
+    lat: float | None = None,
+    lng: float | None = None,
+) -> Address:
     address = Address(line1=address_text, city=city, country="India")
-    try:
-        geo = await geocoding.geocode(f"{address_text}, {city}, India")
-        address.lat, address.lng = geo.lat, geo.lng
-    except GeocodingError:
-        address.lat, address.lng = None, None
+    if lat is not None and lng is not None:
+        address.lat, address.lng = lat, lng
+    else:
+        try:
+            geo = await geocoding.geocode(f"{address_text}, {city}, India")
+            address.lat, address.lng = geo.lat, geo.lng
+        except GeocodingError:
+            address.lat, address.lng = None, None
     db.add(address)
     await db.flush()
     if address.lat is not None and address.lng is not None:
@@ -97,7 +106,7 @@ async def signup_donor(request: Request, payload: DonorSignupRequest, db: AsyncS
     )
     db.add(user)
     await db.flush()
-    address = await _create_address(db, payload.address, payload.city)
+    address = await _create_address(db, payload.address, payload.city, payload.lat, payload.lng)
     db.add(
         DonorProfile(
             user_id=user.id,
@@ -130,7 +139,7 @@ async def signup_ngo(request: Request, payload: NgoSignupRequest, db: AsyncSessi
     )
     db.add(user)
     await db.flush()
-    address = await _create_address(db, payload.address, payload.city)
+    address = await _create_address(db, payload.address, payload.city, payload.lat, payload.lng)
     db.add(
         NGOProfile(
             user_id=user.id,

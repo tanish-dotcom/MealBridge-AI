@@ -177,18 +177,24 @@ def _rank_candidates(
 
 
 async def run_matching(
-    session: AsyncSession, donation: Donation, exclude_ngo_ids: set[str] | None = None
+    session: AsyncSession,
+    donation: Donation,
+    exclude_ngo_ids: set[str] | None = None,
+    min_candidates: int | None = None,
 ) -> tuple[list[tuple[NGOProfile, float, float, float, float]], str | None]:
     """Run the candidate query with radius expansion and return ranked NGOs.
 
     Returns (ranked_list, radius_used). Creates nothing; the caller persists
-    MatchRequest rows via create_offers()."""
+    MatchRequest rows via create_offers(). `min_candidates` overrides the
+    MATCH_MIN_CANDIDATES stop condition (used by the ML pipeline, which needs
+    a wider candidate pool than the offer flow)."""
     if donation.pickup_lat is None or donation.pickup_lng is None:
         logger.warning("Donation %s has no geocoded pickup coords", donation.id)
         return [], None
 
     lat, lng = donation.pickup_lat, donation.pickup_lng
     radius = settings.match_initial_radius_km
+    stop_after = settings.match_min_candidates if min_candidates is None else max(min_candidates, 1)
     ranked: list[tuple[NGOProfile, float, float, float, float]] = []
     radius_used = None
     while radius <= settings.match_max_radius_km:
@@ -205,7 +211,7 @@ async def run_matching(
             ngos = {str(n.id): n for n in (await session.execute(stmt)).scalars().all()}
             ranked = _rank_candidates(raw_candidates, loads, ngos, donation)
             radius_used = radius
-            if len(ranked) >= settings.match_min_candidates:
+            if len(ranked) >= stop_after:
                 break
         radius += settings.match_radius_step_km
         logger.info("Expanding match radius for donation %s to %skm", donation.id, radius)

@@ -101,6 +101,63 @@ async def reject_ngo(
     return await _set_verification(ngo_profile_id, VerificationStatus.rejected.value, "admin.verify.reject", request, db)
 
 
+async def _set_restaurant_verification(
+    donor_profile_id: uuid.UUID, verified: bool, action: str, request: Request, db: AsyncSession
+) -> dict:
+    donor = (
+        await db.execute(
+            select(DonorProfile)
+            .where(DonorProfile.id == donor_profile_id)
+            .options(selectinload(DonorProfile.user))
+        )
+    ).scalar_one_or_none()
+    if donor is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Restaurant not found")
+    donor.is_verified = verified
+    await audit.log_audit(
+        db, action,
+        actor_user_id=str(request.state.current_user_id if hasattr(request.state, "current_user_id") else None),
+        target_type="donor_profile", target_id=str(donor.id),
+        ip_address=request.client.host if request.client else None,
+    )
+    if donor.user is not None:
+        await notifications.notify(
+            db,
+            donor.user,
+            NotificationType.verification_status,
+            "Restaurant verification update",
+            f"Your restaurant '{donor.restaurant_name}' has been "
+            f"{'verified' if verified else 'unverified'} by an admin.",
+            payload={"is_verified": verified},
+        )
+    await db.commit()
+    return {
+        "message": f"Restaurant {'verified' if verified else 'unverified'}",
+        "id": str(donor.id),
+        "is_verified": donor.is_verified,
+    }
+
+
+@router.post("/restaurants/{donor_profile_id}/verify")
+async def verify_restaurant(
+    donor_profile_id: uuid.UUID,
+    request: Request,
+    _: User = Depends(admin_only),
+    db: AsyncSession = Depends(get_db),
+):
+    return await _set_restaurant_verification(donor_profile_id, True, "admin.restaurant.verify", request, db)
+
+
+@router.post("/restaurants/{donor_profile_id}/unverify")
+async def unverify_restaurant(
+    donor_profile_id: uuid.UUID,
+    request: Request,
+    _: User = Depends(admin_only),
+    db: AsyncSession = Depends(get_db),
+):
+    return await _set_restaurant_verification(donor_profile_id, False, "admin.restaurant.unverify", request, db)
+
+
 @router.get("/dashboard/overview", response_model=AdminDashboardOverview)
 async def dashboard_overview(_: User = Depends(admin_only), db: AsyncSession = Depends(get_db)):
     return await analytics.admin_overview(db)

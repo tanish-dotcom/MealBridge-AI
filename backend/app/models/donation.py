@@ -4,10 +4,10 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import Float, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, uuid_pk
+from app.models.base import Base, TimestampMixin, UTCDateTime, uuid_pk
 
 
 class Donation(Base, TimestampMixin):
@@ -23,8 +23,8 @@ class Donation(Base, TimestampMixin):
     food_category: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     quantity_value: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     quantity_unit: Mapped[str] = mapped_column(String(16), nullable=False, default="meals")
-    preparation_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    best_before: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    preparation_time: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    best_before: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending_match", index=True)

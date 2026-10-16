@@ -122,6 +122,25 @@ export interface MatchResult {
   alternatives: MatchCandidate[];
 }
 
+export interface MlRecommendation {
+  ngo_id: string;
+  ngo_name: string;
+  match_score: number;
+  distance_km: number;
+  capacity_meals_per_day?: number | null;
+  ngo_demand: number;
+  acceptance_rate: number;
+  reliability_score: number;
+  estimated_pickup_minutes: number;
+  reasons: string[];
+}
+
+export interface MlTopResponse {
+  donation_id: string;
+  model_name: string;
+  recommendations: MlRecommendation[];
+}
+
 export interface Directions {
   distance_km: number;
   duration_minutes: number;
@@ -286,6 +305,8 @@ export interface DonorSignupPayload {
   phone: string;
   address: string;
   city: string;
+  lat?: number | null;
+  lng?: number | null;
   password: string;
 }
 
@@ -299,6 +320,8 @@ export interface NgoSignupPayload {
   city: string;
   food_requirements: string[];
   capacity_meals_per_day?: number | null;
+  lat?: number | null;
+  lng?: number | null;
   password: string;
 }
 
@@ -312,4 +335,27 @@ export interface DonationCreatePayload {
   notes?: string | null;
   address: string;
   city: string;
+  lat?: number | null;
+  lng?: number | null;
+}
+
+export interface GeoSuggestion {
+  label: string;
+  lat: number;
+  lng: number;
+  line1?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postal_code?: string | null;
+}
+
+export interface GeoReverseResult {
+  lat: number;
+  lng: number;
+  label?: string | null;
+  line1?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postal_code?: string | null;
+  country?: string | null;
 }

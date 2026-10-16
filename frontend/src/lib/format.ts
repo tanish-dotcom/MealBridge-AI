@@ -45,10 +45,25 @@ export function unitLabel(value?: string | null): string {
   return (value && UNIT_LABELS[value]) || value || "";
 }
 
+const NAIVE_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+const HAS_OFFSET = /(?:Z|[+-]\d{2}:?\d{2})$/i;
+
+/**
+ * Parse an API timestamp into a Date. The backend stores times in UTC and may
+ * serialize them without an explicit offset (SQLite); browsers would otherwise
+ * read such strings as local time, showing the wrong "posted" time. Treat
+ * offset-less datetimes as UTC so they localize correctly.
+ */
+export function parseApiDate(iso?: string | null): Date | null {
+  if (!iso) return null;
+  const normalized = NAIVE_DATETIME.test(iso) && !HAS_OFFSET.test(iso) ? `${iso}Z` : iso;
+  const d = new Date(normalized);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 export function formatDate(iso?: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  const d = parseApiDate(iso);
+  if (!d) return "—";
   return d.toLocaleDateString(undefined, {
     day: "numeric",
     month: "short",
@@ -57,9 +72,8 @@ export function formatDate(iso?: string | null): string {
 }
 
 export function formatDateTime(iso?: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  const d = parseApiDate(iso);
+  if (!d) return "—";
   return d.toLocaleString(undefined, {
     day: "numeric",
     month: "short",
@@ -69,8 +83,8 @@ export function formatDateTime(iso?: string | null): string {
 }
 
 export function timeAgo(iso?: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
+  const d = parseApiDate(iso);
+  if (!d) return "—";
   const diff = Date.now() - d.getTime();
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return "just now";
