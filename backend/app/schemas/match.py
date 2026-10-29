@@ -34,6 +34,13 @@ class MatchRespondRequest(BaseModel):
     action: str = Field(pattern="^(accept|reject)$")
 
 
+class SendOfferRequest(BaseModel):
+    """A donor choosing one of the suggested NGOs to receive an offer."""
+
+    ngo_id: uuid.UUID
+    match_score: float | None = Field(default=None, ge=0, le=100)
+
+
 class MatchRequestOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

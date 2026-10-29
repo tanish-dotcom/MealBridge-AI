@@ -1,27 +1,45 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { api } from "../lib/api";
 import { initials } from "../lib/format";
+import { useTheme } from "../theme/ThemeContext";
 import type { NotificationItem } from "../lib/types";
+import {
+  BellIcon,
+  ChartIcon,
+  CheckCircleIcon,
+  HomeIcon,
+  InboxIcon,
+  LeafIcon,
+  ListIcon,
+  MoonIcon,
+  PlusIcon,
+  SettingsIcon,
+  ShieldCheckIcon,
+  StoreIcon,
+  SunIcon,
+  UsersIcon,
+} from "./Icons";
 
-const NAV: { to: string; label: string; roles: string[]; icon: string }[] = [
-  { to: "/", label: "Dashboard", roles: ["donor", "ngo", "admin"], icon: "▦" },
-  { to: "/donations/new", label: "Post Donation", roles: ["donor"], icon: "＋" },
-  { to: "/donations", label: "My Donations", roles: ["donor"], icon: "◫" },
-  { to: "/ngo/available", label: "Available Donations", roles: ["ngo"], icon: "◫" },
-  { to: "/ngo/accepted", label: "Accepted Donations", roles: ["ngo"], icon: "✓" },
-  { to: "/admin/verifications", label: "Verifications", roles: ["admin"], icon: "🛡" },
-  { to: "/admin/impact", label: "Impact Analytics", roles: ["admin"], icon: "📊" },
-  { to: "/admin/restaurants", label: "Restaurants", roles: ["admin"], icon: "🍽" },
-  { to: "/admin/ngos", label: "NGOs", roles: ["admin"], icon: "🤝" },
-  { to: "/admin/donations", label: "All Donations", roles: ["admin"], icon: "◫" },
-  { to: "/notifications", label: "Notifications", roles: ["donor", "ngo", "admin"], icon: "🔔" },
-  { to: "/settings", label: "Settings", roles: ["donor", "ngo", "admin"], icon: "⚙" },
+const NAV: { to: string; label: string; roles: string[]; icon: ReactNode }[] = [
+  { to: "/", label: "Dashboard", roles: ["donor", "ngo", "admin"], icon: <HomeIcon /> },
+  { to: "/donations/new", label: "Post Donation", roles: ["donor"], icon: <PlusIcon /> },
+  { to: "/donations", label: "My Donations", roles: ["donor"], icon: <LeafIcon /> },
+  { to: "/ngo/available", label: "Available Donations", roles: ["ngo"], icon: <InboxIcon /> },
+  { to: "/ngo/accepted", label: "Accepted Donations", roles: ["ngo"], icon: <CheckCircleIcon /> },
+  { to: "/admin/verifications", label: "Verifications", roles: ["admin"], icon: <ShieldCheckIcon /> },
+  { to: "/admin/impact", label: "Impact Analytics", roles: ["admin"], icon: <ChartIcon /> },
+  { to: "/admin/restaurants", label: "Restaurants", roles: ["admin"], icon: <StoreIcon /> },
+  { to: "/admin/ngos", label: "NGOs", roles: ["admin"], icon: <UsersIcon /> },
+  { to: "/admin/donations", label: "All Donations", roles: ["admin"], icon: <ListIcon /> },
+  { to: "/notifications", label: "Notifications", roles: ["donor", "ngo", "admin"], icon: <BellIcon /> },
+  { to: "/settings", label: "Settings", roles: ["donor", "ngo", "admin"], icon: <SettingsIcon /> },
 ];
 
 export function Layout() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -87,12 +105,20 @@ export function Layout() {
           </div>
           <div className="topbar-actions">
             <button
+              className="icon-btn theme-toggle"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+              title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            >
+              {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+            </button>
+            <button
               className="icon-btn"
               onClick={() => navigate("/notifications")}
               aria-label="Notifications"
               title="Notifications"
             >
-              <span className="bell">🔔</span>
+              <BellIcon />
               {unread > 0 && <span className="bell-dot">{unread}</span>}
             </button>
             <div className="user-menu">
@@ -134,7 +160,6 @@ export function Layout() {
           <Outlet />
         </main>
       </div>
-
     </div>
   );
 }

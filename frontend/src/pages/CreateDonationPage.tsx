@@ -70,7 +70,7 @@ export function CreateDonationPage() {
         lng: coords.lng,
         best_before: form.best_before ? new Date(form.best_before).toISOString() : null,
       });
-      success("Donation posted! Matching with NGOs now…");
+      success("Donation posted! Pick an NGO to send your first offer.");
       navigate(`/donations/${res.donation_id}`);
     } catch (err) {
       showError(err instanceof Error ? err.message : "Failed to post donation.");

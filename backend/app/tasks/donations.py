@@ -28,7 +28,7 @@ def expire_stale_match_requests():
         async with async_session_factory() as session:
             expired = await matching.expire_stale_requests(session)
             await session.commit()
-            logger.info("Expired stale match requests; re-offered %s donations", expired)
+            logger.info("Expired stale match requests; %s donations now need a new offer", expired)
             return expired
 
     return _run(_job())

@@ -105,12 +105,25 @@ export function DonationDetailPage() {
     }
   };
 
+  const doSendOffer = async (rec: RecommendedNgo) => {
+    setBusy(`offer:${rec.ngo_id}`);
+    try {
+      await api.sendOffer(id, { ngo_id: rec.ngo_id, match_score: rec.score });
+      success(`Offer sent to ${rec.ngo_name}.`);
+      await load();
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Could not send offer.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   if (loading || !donation) return <PageSpinner />;
 
   const completed = donation.completed_by_donor;
 
-  // Merge the ML top-5 suggestions with the heuristic offer list into a single
-  // ranked list keyed by NGO, so the donor sees one list instead of two.
+  // The ML top-5 (already sorted by predicted acceptance) is the priority list.
+  // Existing offers are merged in so "offer sent"/"accepted" state stays visible.
   const offerByNgo = new Map<string, MatchCandidate>();
   if (matches) {
     for (const candidate of [matches.top_match, ...matches.alternatives]) {
@@ -119,40 +132,49 @@ export function DonationDetailPage() {
   }
   const acceptedNgoId = donation.matched_ngo_id ?? null;
 
+  const withOfferState = (rec: Omit<RecommendedNgo, "contact_person" | "offerStatus">): RecommendedNgo => {
+    const offer = offerByNgo.get(rec.ngo_id);
+    return {
+      ...rec,
+      contact_person: offer?.contact_person ?? null,
+      offerStatus: offer ? (rec.ngo_id === acceptedNgoId ? "accepted" : "offered") : undefined,
+    };
+  };
+
   const recommended: RecommendedNgo[] = [];
   const seenNgos = new Set<string>();
 
   for (const rec of mlSuggestions ?? []) {
-    const offer = offerByNgo.get(rec.ngo_id);
-    recommended.push({
-      ngo_id: rec.ngo_id,
-      ngo_name: rec.ngo_name,
-      contact_person: offer?.contact_person ?? null,
-      score: rec.match_score,
-      distance_km: rec.distance_km,
-      eta: rec.estimated_pickup_minutes,
-      reasons: rec.reasons.length > 0 ? rec.reasons : offer?.quality_tags ?? [],
-      acceptance_rate: rec.acceptance_rate,
-      demand: rec.ngo_demand,
-      ml: true,
-      offerStatus: offer ? (rec.ngo_id === acceptedNgoId ? "accepted" : "offered") : undefined,
-    });
+    recommended.push(
+      withOfferState({
+        ngo_id: rec.ngo_id,
+        ngo_name: rec.ngo_name,
+        score: rec.match_score,
+        distance_km: rec.distance_km,
+        eta: rec.estimated_pickup_minutes,
+        reasons: rec.reasons.length > 0 ? rec.reasons : offerByNgo.get(rec.ngo_id)?.quality_tags ?? [],
+        acceptance_rate: rec.acceptance_rate,
+        demand: rec.ngo_demand,
+        ml: true,
+      })
+    );
     seenNgos.add(rec.ngo_id);
   }
 
+  // Keep any outstanding offer visible even if it fell outside the ML top-5.
   for (const candidate of offerByNgo.values()) {
     if (seenNgos.has(candidate.ngo_id)) continue;
-    recommended.push({
-      ngo_id: candidate.ngo_id,
-      ngo_name: candidate.ngo_name,
-      contact_person: candidate.contact_person,
-      score: candidate.match_percent,
-      distance_km: candidate.distance_km,
-      eta: candidate.estimated_pickup_minutes,
-      reasons: candidate.quality_tags,
-      ml: false,
-      offerStatus: candidate.ngo_id === acceptedNgoId ? "accepted" : "offered",
-    });
+    recommended.push(
+      withOfferState({
+        ngo_id: candidate.ngo_id,
+        ngo_name: candidate.ngo_name,
+        score: candidate.match_percent,
+        distance_km: candidate.distance_km,
+        eta: candidate.estimated_pickup_minutes,
+        reasons: candidate.quality_tags,
+        ml: false,
+      })
+    );
     seenNgos.add(candidate.ngo_id);
   }
 
@@ -221,7 +243,7 @@ export function DonationDetailPage() {
         <div className="card">
           <div className="card-header">
             <h3>Recommended NGOs</h3>
-            {hasMl && <span className="muted small">AI ranked by predicted acceptance</span>}
+            {hasMl && <span className="muted small">Top 5 by AI acceptance probability</span>}
           </div>
 
           {CANCELABLE.has(donation.status) ? (
@@ -241,6 +263,16 @@ export function DonationDetailPage() {
                           )}
                           {rec.offerStatus === "offered" && (
                             <span className="badge badge-blue">Offer sent</span>
+                          )}
+                          {rec.offerStatus === undefined && (
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => doSendOffer(rec)}
+                              disabled={busy !== null}
+                            >
+                              {busy === `offer:${rec.ngo_id}` && <ButtonSpinner />}
+                              Send offer
+                            </button>
                           )}
                         </div>
                         <div className="muted small">
@@ -269,8 +301,8 @@ export function DonationDetailPage() {
                 </ul>
                 <p className="muted small" style={{ marginTop: 12 }}>
                   {hasOffers
-                    ? "Offers sent to the listed NGOs — the first verified NGO to accept takes this donation."
-                    : "Ranked list of nearby verified NGOs for this donation."}
+                    ? "Offer sent — the first verified NGO to accept takes it. You can still send offers to others."
+                    : "Pick an NGO above and send an offer — the first verified NGO to accept takes this donation."}
                   {hasMl ? " Match % is the model's predicted chance each NGO accepts." : ""}
                 </p>
               </>

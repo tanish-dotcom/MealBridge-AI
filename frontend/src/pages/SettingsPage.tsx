@@ -1,11 +1,14 @@
 import { useState, type FormEvent } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { useToast } from "../auth/ToastContext";
+import { useTheme } from "../theme/ThemeContext";
 import { api } from "../lib/api";
 import { ButtonSpinner } from "../components/Spinner";
+import { MoonIcon, SunIcon } from "../components/Icons";
 
 export function SettingsPage() {
   const { user, refreshUser, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
   const { success, error: showError } = useToast();
   const [prefsSubmitting, setPrefsSubmitting] = useState(false);
   const [pwSubmitting, setPwSubmitting] = useState(false);
@@ -59,11 +62,41 @@ export function SettingsPage() {
       <div className="page-header">
         <div>
           <h2>Settings</h2>
-          <p className="muted">Notification preferences and security.</p>
+          <p className="muted">Appearance, notification preferences and security.</p>
         </div>
       </div>
 
       <div className="detail-grid">
+        <div className="card">
+          <div className="card-header">
+            <h3>Appearance</h3>
+          </div>
+          <div className="setting-row theme-row">
+            <div>
+              <strong>Theme</strong>
+              <div className="muted small">Choose how MealBridge looks on this device.</div>
+            </div>
+            <div className="theme-options" role="group" aria-label="Theme">
+              <button
+                type="button"
+                className={`theme-option ${theme === "light" ? "active" : ""}`}
+                onClick={() => setTheme("light")}
+                aria-pressed={theme === "light"}
+              >
+                <SunIcon /> Light
+              </button>
+              <button
+                type="button"
+                className={`theme-option ${theme === "dark" ? "active" : ""}`}
+                onClick={() => setTheme("dark")}
+                aria-pressed={theme === "dark"}
+              >
+                <MoonIcon /> Dark
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div className="card">
           <div className="card-header">
             <h3>Notifications</h3>

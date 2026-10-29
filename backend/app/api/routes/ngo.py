@@ -13,7 +13,7 @@ from app.api.deps import get_current_user, get_db, get_ngo_profile
 from app.models import Donation, MatchRequest, NGOProfile, User
 from app.models.enums import DonationStatus, MatchRequestStatus, NotificationType, Role, VerificationStatus
 from app.schemas.match import MatchRespondRequest, NgoStats
-from app.services import audit, matching, notifications
+from app.services import audit, notifications
 from app.services.geo import haversine_km
 
 router = APIRouter(prefix="/ngo", tags=["ngo"])
@@ -188,7 +188,17 @@ async def respond_to_match(
             f"{profile.org_name} declined your donation of {donation.food_name}.",
             payload={"donation_id": str(donation.id)},
         )
-    # Offer to the next-ranked NGO immediately.
-    await matching.offer_next(db, donation)
+    # The donor decides who to offer next; only fall back to unmatched when no
+    # other offer for this donation is still outstanding.
+    remaining = (
+        await db.execute(
+            select(MatchRequest.id).where(
+                MatchRequest.donation_id == donation.id,
+                MatchRequest.status == MatchRequestStatus.offered.value,
+            )
+        )
+    ).first()
+    if remaining is None and donation.status == DonationStatus.awaiting_response.value:
+        donation.status = DonationStatus.unmatched.value
     await db.commit()
     return {"message": "Donation rejected", "donation_id": str(donation.id), "status": donation.status}

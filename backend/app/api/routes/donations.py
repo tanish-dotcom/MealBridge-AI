@@ -1,5 +1,5 @@
-"""Donation routes: create (geocode + match), list, detail, cancel, matches,
-directions, and two-sided pickup confirmation."""
+"""Donation routes: create (geocode), donor-sent offers, list, detail, cancel,
+matches, directions, and two-sided pickup confirmation."""
 from __future__ import annotations
 
 import uuid
@@ -12,13 +12,13 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_user, get_db, get_donation_for_donor, get_donor_profile, get_ngo_profile
 from app.core.config import settings
-from app.models import Donation, DonationPhoto, MatchRequest, NGOProfile, User
-from app.models.enums import DonationStatus, Role
+from app.models import Address, Donation, DonationPhoto, MatchRequest, NGOProfile, User
+from app.models.enums import DonationStatus, MatchRequestStatus, NotificationType, Role, VerificationStatus
 from app.schemas.donation import DonationCreate, DonationOut, DonationStats
-from app.schemas.match import DirectionsOut, MatchCandidate, MatchResult
+from app.schemas.match import DirectionsOut, MatchCandidate, MatchResult, SendOfferRequest
 from app.services import audit, directions as directions_service, geocoding, matching, notifications
+from app.services.geo import haversine_km
 from app.services.geocoding import GeocodingError
-from app.models.enums import NotificationType
 
 router = APIRouter(prefix="/donations", tags=["donations"])
 
@@ -121,10 +121,6 @@ async def create_donation(
         f"{payload.food_name} ({payload.quantity_value} {payload.quantity_unit.value}) is now live.",
         payload={"donation_id": str(donation.id)},
     )
-    await db.flush()
-
-    ranked, _ = await matching.run_matching(db, donation)
-    await matching.create_offers(db, donation, ranked)
     await db.commit()
     return {"donation_id": str(donation.id), "status": donation.status}
 
@@ -200,6 +196,122 @@ async def cancel_donation(
     return {"message": "Donation cancelled"}
 
 
+@router.post("/{donation_id}/offers", status_code=status.HTTP_201_CREATED)
+async def send_offer(
+    donation_id: uuid.UUID,
+    payload: SendOfferRequest,
+    request: Request,
+    donation: Donation = Depends(get_donation_for_donor),
+    db: AsyncSession = Depends(get_db),
+):
+    """Donor-selected offer: after the ML model ranks nearby NGOs, the donor
+    manually sends an offer to one of them instead of the system auto-offering."""
+    if donation.status not in (
+        DonationStatus.pending_match.value,
+        DonationStatus.unmatched.value,
+        DonationStatus.awaiting_response.value,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This donation is no longer accepting offers",
+        )
+
+    ngo = await db.get(NGOProfile, payload.ngo_id)
+    if ngo is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="NGO not found")
+    if ngo.verification_status != VerificationStatus.verified.value:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This NGO is not verified yet",
+        )
+
+    existing = (
+        await db.execute(
+            select(MatchRequest).where(
+                MatchRequest.donation_id == donation.id,
+                MatchRequest.ngo_id == ngo.id,
+            )
+        )
+    ).scalar_one_or_none()
+    if existing is not None and existing.status in (
+        MatchRequestStatus.offered.value,
+        MatchRequestStatus.accepted.value,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An offer has already been sent to this NGO",
+        )
+
+    distance_km = 0.0
+    if (
+        donation.pickup_lat is not None
+        and donation.pickup_lng is not None
+        and ngo.address_id is not None
+    ):
+        address = await db.get(Address, ngo.address_id)
+        if address and address.lat is not None and address.lng is not None:
+            distance_km = round(
+                haversine_km(donation.pickup_lat, donation.pickup_lng, address.lat, address.lng),
+                2,
+            )
+
+    score = int(round(payload.match_score)) if payload.match_score is not None else 0
+    score = max(0, min(100, score))
+    now = datetime.now(timezone.utc)
+
+    if existing is not None:
+        existing.status = MatchRequestStatus.offered.value
+        existing.offered_at = now
+        existing.responded_at = None
+        existing.distance_km = distance_km
+        existing.match_percent = score
+        existing.rank_score = score / 100.0
+        offer = existing
+    else:
+        offer = MatchRequest(
+            donation_id=donation.id,
+            ngo_id=ngo.id,
+            rank_score=score / 100.0,
+            match_percent=score,
+            distance_km=distance_km,
+            status=MatchRequestStatus.offered.value,
+            offered_at=now,
+        )
+        db.add(offer)
+
+    donation.status = DonationStatus.awaiting_response.value
+    await db.flush()
+
+    ngo_user = await db.get(User, ngo.user_id)
+    if ngo_user is not None:
+        await notifications.notify(
+            db,
+            ngo_user,
+            NotificationType.request_received,
+            "New donation offer",
+            f"{donation.food_name} is available for pickup. Please accept or decline.",
+            payload={"donation_id": str(donation.id), "match_request_id": str(offer.id)},
+            send_sms=True,
+        )
+
+    await audit.log_audit(
+        db,
+        "match.offer",
+        actor_user_id=str(donation.donor_id),
+        target_type="donation",
+        target_id=str(donation.id),
+        ip_address=request.client.host if request.client else None,
+        metadata={"ngo_id": str(ngo.id), "match_percent": score},
+    )
+    await db.commit()
+    return {
+        "match_request_id": str(offer.id),
+        "donation_id": str(donation.id),
+        "ngo_id": str(ngo.id),
+        "status": donation.status,
+    }
+
+
 @router.get("/{donation_id}/matches", response_model=MatchResult)
 async def donation_matches(
     donation_id: uuid.UUID,
@@ -213,17 +325,6 @@ async def donation_matches(
             .order_by(MatchRequest.match_percent.desc())
         )
     ).scalars().all()
-    if not requests and donation.status in ("pending_match", "unmatched", "awaiting_response"):
-        ranked, _ = await matching.run_matching(db, donation)
-        await matching.create_offers(db, donation, ranked)
-        await db.commit()
-        requests = (
-            await db.execute(
-                select(MatchRequest)
-                .where(MatchRequest.donation_id == donation.id)
-                .order_by(MatchRequest.match_percent.desc())
-            )
-        ).scalars().all()
 
     active = [r for r in requests if r.status in ("offered", "accepted")]
     if not active:

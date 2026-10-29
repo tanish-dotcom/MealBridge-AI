@@ -188,6 +188,11 @@ export const api = {
   getDonation: (id: string) => get(`/donations/${id}`) as Promise<Donation>,
   cancelDonation: (id: string) =>
     post<{ message: string }>(`/donations/${id}/cancel`),
+  sendOffer: (id: string, payload: { ngo_id: string; match_score?: number }) =>
+    post<{ match_request_id: string; donation_id: string; status: string }>(
+      `/donations/${id}/offers`,
+      payload
+    ),
   donationMatches: (id: string) =>
     get(`/donations/${id}/matches`) as Promise<MatchResult>,
   donationDirections: (id: string) =>

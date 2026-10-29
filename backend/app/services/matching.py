@@ -303,6 +303,15 @@ async def expire_stale_requests(session: AsyncSession) -> int:
             await session.execute(select(Donation).where(Donation.id == mr.donation_id))
         ).scalar_one_or_none()
         if donation and donation.status == "awaiting_response":
-            await offer_next(session, donation)
+            remaining = (
+                await session.execute(
+                    select(MatchRequest.id).where(
+                        MatchRequest.donation_id == donation.id,
+                        MatchRequest.status == "offered",
+                    )
+                )
+            ).first()
+            if remaining is None:
+                donation.status = "unmatched"
             reoffered += 1
     return reoffered
