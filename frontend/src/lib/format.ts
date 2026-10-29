@@ -1,3 +1,4 @@
+// API values use stable keys; these maps keep their display names consistent.
 const CATEGORY_LABELS: Record<string, string> = {
   hot_meals: "Hot Meals",
   packaged_food: "Packaged Food",
@@ -87,6 +88,7 @@ export function timeAgo(iso?: string | null): string {
   if (!d) return "—";
   const diff = Date.now() - d.getTime();
   const minutes = Math.floor(diff / 60000);
+  // Use compact labels for recent activity and a calendar date for older items.
   if (minutes < 1) return "just now";
   if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.floor(minutes / 60);

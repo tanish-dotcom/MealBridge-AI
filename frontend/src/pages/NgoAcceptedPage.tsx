@@ -26,6 +26,7 @@ export function NgoAcceptedPage() {
   }, [load]);
 
   const confirmPickup = async (donationId: string) => {
+    // Reload because pickup confirmation may advance the donation to completed.
     setBusyId(donationId);
     try {
       const res = await api.confirmPickup(donationId);

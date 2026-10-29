@@ -19,6 +19,7 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       const user = await login(email.trim(), password);
+      // ProtectedRoute stores the requested path so sign-in can return users there.
       const from = (location.state as { from?: string } | null)?.from;
       navigate(from || "/", { replace: true });
       void user;

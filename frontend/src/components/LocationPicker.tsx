@@ -71,6 +71,7 @@ export function LocationPicker({ lat, lng, onPick }: LocationPickerProps) {
 
   const resolvePin = useCallback(
     async (la: number, ln: number, recenter: boolean) => {
+      // Save the coordinates immediately; the address lookup can fail independently.
       placeMarker(la, ln, recenter);
       onPickRef.current({ lat: la, lng: ln });
       setResolving(true);

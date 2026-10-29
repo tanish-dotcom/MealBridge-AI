@@ -50,6 +50,7 @@ export function CreateDonationPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    // Validate before converting the form into the API payload.
     const qty = Number(form.quantity_value);
     if (!Number.isFinite(qty) || qty <= 0) {
       showError("Quantity must be a positive number.");

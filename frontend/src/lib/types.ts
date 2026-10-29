@@ -1,3 +1,4 @@
+// Shared API shapes keep page state and request responses in sync.
 export type Role = "donor" | "ngo" | "admin";
 
 export interface TokenPair {

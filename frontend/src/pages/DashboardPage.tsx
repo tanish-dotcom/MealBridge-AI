@@ -16,6 +16,7 @@ function DonorDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Fetch the donor's summary and recent activity together for one loading state.
     Promise.all([api.myDonationStats(), api.myDonations()])
       .then(([s, d]) => {
         setStats(s);

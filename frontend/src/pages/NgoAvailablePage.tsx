@@ -25,6 +25,7 @@ export function NgoAvailablePage() {
   }, [load]);
 
   const respond = async (matchRequestId: string, action: "accept" | "reject") => {
+    // Refresh the offer list after the server records the NGO's response.
     setBusyId(matchRequestId);
     try {
       const res = await api.ngoRespond(matchRequestId, action);

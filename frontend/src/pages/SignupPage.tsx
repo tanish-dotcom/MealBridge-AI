@@ -47,6 +47,7 @@ export function SignupPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    // Keep this aligned with the password rule shown in the signup form.
     if (!/[a-zA-Z]/.test(form.password) || !/\d/.test(form.password)) {
       showError("Password must contain at least one letter and one number.");
       return;

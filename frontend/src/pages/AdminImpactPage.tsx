@@ -11,6 +11,7 @@ export function AdminImpactPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Impact figures are a single report, so keep the empty state usable on API errors.
     api
       .adminImpact()
       .then(setReport)

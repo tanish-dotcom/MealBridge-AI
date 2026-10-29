@@ -35,6 +35,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const toast = useCallback(
     (kind: ToastKind, message: string) => {
+      // IDs let each toast dismiss itself without affecting newer messages.
       const id = nextId.current++;
       setToasts((prev) => [...prev, { id, kind, message }]);
       setTimeout(() => dismiss(id), 5000);

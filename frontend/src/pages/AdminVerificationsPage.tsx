@@ -25,6 +25,7 @@ export function AdminVerificationsPage() {
   }, [load]);
 
   const decide = async (id: string, action: "approve" | "reject") => {
+    // Reload after the decision so the pending queue reflects the server state.
     setBusyId(id);
     try {
       if (action === "approve") {

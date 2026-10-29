@@ -27,6 +27,7 @@ export function Layout() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Refresh the unread count when the user or current page changes.
   useEffect(() => {
     if (!user) return;
     api
@@ -45,6 +46,7 @@ export function Layout() {
 
   if (!user) return null;
 
+  // A single nav list keeps the shell consistent while hiding role-specific links.
   const items = NAV.filter((n) => n.roles.includes(user.role));
 
   return (

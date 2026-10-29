@@ -41,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Restore the session once on startup; ignore the result if the provider unmounts.
     let active = true;
     (async () => {
       if (!tokens.access) {

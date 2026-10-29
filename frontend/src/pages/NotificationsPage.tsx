@@ -23,6 +23,7 @@ export function NotificationsPage() {
 
   const markRead = async (id: string) => {
     await api.markNotificationRead(id).catch(() => undefined);
+    // Update the badge right away; a failed request can be corrected on the next load.
     setItems((prev) => prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n)));
   };
 

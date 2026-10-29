@@ -22,6 +22,7 @@ export function ProfilePage() {
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const handleSubmit = async (e: FormEvent) => {
+    // Refresh the shared user object so the header and other pages use saved details.
     e.preventDefault();
     setSubmitting(true);
     try {

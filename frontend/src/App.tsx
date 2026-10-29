@@ -25,6 +25,7 @@ import { NotificationsPage } from "./pages/NotificationsPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { SettingsPage } from "./pages/SettingsPage";
 
+// Role checks live here so the page components can stay focused on their own UI.
 function RequireRole({ roles, children }: { roles: Role[]; children: ReactNode }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
@@ -32,6 +33,7 @@ function RequireRole({ roles, children }: { roles: Role[]; children: ReactNode }
   return <>{children}</>;
 }
 
+// The landing page is public; signed-in users get the shared app shell instead.
 function HomeRoute() {
   const { user, loading } = useAuth();
   if (loading) return <PageSpinner />;

@@ -13,6 +13,7 @@ function useAdminData<T>(fetcher: () => Promise<T>) {
 
   const reload = useCallback(() => fetcher().then(setData).catch(() => setData(null)), [fetcher]);
 
+  // Ignore late responses after unmount so a page switch can't update stale state.
   useEffect(() => {
     let active = true;
     setLoading(true);

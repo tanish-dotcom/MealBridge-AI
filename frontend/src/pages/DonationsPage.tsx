@@ -13,6 +13,7 @@ export function DonationsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // The list is read-only here; changes to a donation are handled on its detail page.
     api
       .myDonations()
       .then(setDonations)

@@ -33,6 +33,7 @@ export function SettingsPage() {
 
   const changePassword = async (e: FormEvent) => {
     e.preventDefault();
+    // Check both fields before sending the password change request.
     if (pw.new_password.length < 8) {
       showError("New password must be at least 8 characters.");
       return;

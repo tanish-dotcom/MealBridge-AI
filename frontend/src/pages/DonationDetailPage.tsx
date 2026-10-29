@@ -48,6 +48,7 @@ export function DonationDetailPage() {
     try {
       const d = await api.getDonation(id);
       setDonation(d);
+      // Suggestions are only useful before a donation has been matched or closed.
       if (CANCELABLE.has(d.status)) {
         const [matchesResult, mlResult] = await Promise.allSettled([
           api.donationMatches(id),

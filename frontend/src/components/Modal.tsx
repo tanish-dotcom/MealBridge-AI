@@ -11,6 +11,7 @@ interface ModalProps {
 export function Modal({ open, title, onClose, children, wide }: ModalProps) {
   useEffect(() => {
     if (!open) return;
+    // Escape should behave like clicking the close button while the dialog is open.
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };

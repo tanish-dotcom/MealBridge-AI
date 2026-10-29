@@ -29,6 +29,7 @@ const BASE_URL =
 const ACCESS_KEY = "mb_access_token";
 const REFRESH_KEY = "mb_refresh_token";
 
+// Keep both tokens together so refresh and logout can't leave stale auth behind.
 export const tokens = {
   get access() {
     return localStorage.getItem(ACCESS_KEY);
@@ -68,6 +69,7 @@ function errorMessage(status: number, detail: unknown): string {
   return status === 422 ? "Please check the form details and try again." : "Request failed";
 }
 
+// Requests that expire at the same time share one refresh call.
 let refreshing: Promise<string> | null = null;
 
 async function refreshAccessToken(): Promise<string> {
@@ -111,6 +113,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   let res = await doFetch(tokens.access);
 
+  // Retry once with a fresh access token before treating the request as unauthorized.
   if (res.status === 401 && tokens.refresh) {
     const token = tokens.refresh ? await getRefreshedToken() : null;
     if (token) {

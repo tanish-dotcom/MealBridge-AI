@@ -7,6 +7,7 @@ import { App } from "./App";
 import "./styles/global.css";
 import "./styles/landing.css";
 
+// Keep routing, auth, and toast state available throughout the whole app.
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
