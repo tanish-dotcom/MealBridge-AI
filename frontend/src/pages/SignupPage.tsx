@@ -8,7 +8,7 @@ import { LocationPicker, type PickedLocation } from "../components/LocationPicke
 
 type Mode = "donor" | "ngo";
 
-export function SignupPage() {
+export function SignupPage({ embedded = false }: { embedded?: boolean }) {
   const { signupDonor, signupNgo } = useAuth();
   const { error: showError, success } = useToast();
   const navigate = useNavigate();
@@ -96,11 +96,10 @@ export function SignupPage() {
     }
   };
 
-  return (
-    <div className="auth-page">
-      <div className="auth-card auth-card-wide">
-        <div className="auth-brand">
-          <span className="brand-mark brand-mark-lg">MB</span>
+  const card = (
+    <div className="auth-card auth-card-wide">
+        <div className="auth-brand auth-brand-signup">
+          <img className="brand-mark brand-mark-lg" src="/logo.png" alt="MealBridge AI logo" />
           <h1>Create an account</h1>
           <p>Join the movement against food waste.</p>
         </div>
@@ -218,7 +217,8 @@ export function SignupPage() {
             Sign in
           </Link>
         </p>
-      </div>
     </div>
   );
+
+  return embedded ? card : <div className="auth-page">{card}</div>;
 }

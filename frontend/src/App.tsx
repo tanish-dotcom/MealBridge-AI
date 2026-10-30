@@ -5,8 +5,7 @@ import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PageSpinner } from "./components/Spinner";
 import type { Role } from "./lib/types";
-import { LoginPage } from "./pages/LoginPage";
-import { SignupPage } from "./pages/SignupPage";
+import { AuthExperience } from "./pages/AuthExperience";
 import { LandingPage } from "./pages/LandingPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { CreateDonationPage } from "./pages/CreateDonationPage";
@@ -44,8 +43,8 @@ function HomeRoute() {
 export function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
+      <Route path="/login" element={<AuthExperience />} />
+      <Route path="/signup" element={<AuthExperience />} />
 
       <Route path="/" element={<HomeRoute />}>
         <Route index element={<DashboardPage />} />

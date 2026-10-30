@@ -39,6 +39,15 @@ export function MoonIcon(props: IconProps) {
   );
 }
 
+export function SidebarToggleIcon({ collapsed, ...props }: IconProps & { collapsed?: boolean }) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d={collapsed ? "m13 8 4 4-4 4" : "m11 8-4 4 4 4"} />
+    </Icon>
+  );
+}
+
 export function PlusIcon(props: IconProps) {
   return (
     <Icon {...props}>

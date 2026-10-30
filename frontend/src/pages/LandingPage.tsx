@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
+import { useTheme } from "../theme/ThemeContext";
+import { MoonIcon, SunIcon } from "../components/Icons";
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
@@ -314,13 +316,14 @@ const MARQUEE_ITEMS = [
 
 export function LandingPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <div className="landing">
       {/* ---------- Nav ---------- */}
       <header className={`lp-nav ${mobileOpen ? "open" : ""}`}>
         <Link to="/" className="lp-brand">
-          <span className="brand-mark">MB</span>
+          <img className="brand-mark" src="/logo.png" alt="MealBridge AI logo" />
           <span className="lp-brand-text">
             <strong>MealBridge AI</strong>
             <small>Surplus food rescue</small>
@@ -333,6 +336,15 @@ export function LandingPage() {
           <a href="#impact">Impact</a>
         </nav>
         <div className="lp-cta">
+          <button
+            className="lp-theme-toggle"
+            onClick={toggleTheme}
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          >
+            {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+            <span>{theme === "dark" ? "Light" : "Dark"}</span>
+          </button>
           <Link to="/login" className="lp-link-btn">
             Sign in
           </Link>
@@ -681,7 +693,7 @@ export function LandingPage() {
       <footer className="lp-footer">
         <div className="lp-footer-inner">
           <Link to="/" className="lp-brand">
-            <span className="brand-mark">MB</span>
+            <img className="brand-mark" src="/logo.png" alt="MealBridge AI logo" />
             <span className="lp-brand-text">
               <strong>MealBridge AI</strong>
               <small>Surplus food rescue</small>

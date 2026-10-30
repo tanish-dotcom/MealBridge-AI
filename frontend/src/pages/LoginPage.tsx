@@ -5,7 +5,7 @@ import { useToast } from "../auth/ToastContext";
 import { ApiError } from "../lib/api";
 import { ButtonSpinner } from "../components/Spinner";
 
-export function LoginPage() {
+export function LoginPage({ embedded = false }: { embedded?: boolean }) {
   const { login } = useAuth();
   const { error: showError } = useToast();
   const navigate = useNavigate();
@@ -30,11 +30,10 @@ export function LoginPage() {
     }
   };
 
-  return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <div className="auth-brand">
-          <span className="brand-mark brand-mark-lg">MB</span>
+  const card = (
+    <div className="auth-card">
+        <div className="auth-brand auth-brand-login">
+          <img className="brand-mark brand-mark-lg" src="/logo.png" alt="MealBridge AI logo" />
           <h1>MealBridge AI</h1>
           <p>Connecting surplus food with those who need it most.</p>
         </div>
@@ -81,7 +80,8 @@ export function LoginPage() {
           <br />
           Admin: <code>admin@mealbridge.ai / Admin@12345</code>
         </div>
-      </div>
     </div>
   );
+
+  return embedded ? card : <div className="auth-page">{card}</div>;
 }

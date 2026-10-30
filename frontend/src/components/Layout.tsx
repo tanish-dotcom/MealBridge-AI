@@ -16,6 +16,7 @@ import {
   MoonIcon,
   PlusIcon,
   SettingsIcon,
+  SidebarToggleIcon,
   ShieldCheckIcon,
   StoreIcon,
   SunIcon,
@@ -44,6 +45,17 @@ export function Layout() {
   const location = useLocation();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    return window.localStorage.getItem("mb_sidebar_collapsed") === "true";
+  });
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed((current) => {
+      const next = !current;
+      window.localStorage.setItem("mb_sidebar_collapsed", String(next));
+      return next;
+    });
+  };
 
   // Refresh the unread count when the user or current page changes.
   useEffect(() => {
@@ -69,13 +81,21 @@ export function Layout() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      <aside className={`sidebar ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
         <div className="sidebar-brand">
-          <span className="brand-mark">MB</span>
-          <div>
+          <img className="brand-mark" src="/logo.png" alt="MealBridge AI logo" />
+          <div className="sidebar-brand-copy">
             <div className="brand-name">MealBridge AI</div>
             <div className="brand-sub">Surplus food rescue</div>
           </div>
+          <button
+            className="sidebar-toggle"
+            onClick={toggleSidebar}
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <SidebarToggleIcon collapsed={sidebarCollapsed} />
+          </button>
         </div>
         <nav className="sidebar-nav">
           {items.map((item) => (
@@ -84,6 +104,7 @@ export function Layout() {
               to={item.to}
               className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
               end={item.to === "/"}
+              title={sidebarCollapsed ? item.label : undefined}
             >
               <span className="nav-icon">{item.icon}</span>
               <span className="nav-label">{item.label}</span>
